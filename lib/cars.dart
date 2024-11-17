@@ -2,10 +2,10 @@
 
 // pub.dev
 import 'dart:developer';
+import 'package:carsome/widget/ui/car-card.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter_slidable/flutter_slidable.dart';
 
 // local
 import 'car-form.dart';
@@ -36,72 +36,6 @@ class CarListPage extends StatefulWidget {
 
   @override
   State<CarListPage> createState() => _CarListPageState();
-}
-
-class CarCard extends StatelessWidget {
-  final Car car;
-  final VoidCallback onEdit;
-
-  const CarCard({super.key, required this.car, required this.onEdit});
-
-  @override
-  Widget build(BuildContext context) {
-    return Slidable(
-      key: Key(car.id.toString()),
-      // Specify the direction of the slide
-      direction: Axis.horizontal,
-      // The end action pane is the one at the right or the bottom side.
-      endActionPane: ActionPane(
-        motion: const DrawerMotion(),
-        children: [
-          SlidableAction(
-            onPressed: (context) {
-              onEdit();
-            },
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
-            icon: Icons.edit,
-            label: 'Edit',
-          ),
-          SlidableAction(
-            onPressed: (context) {
-              onEdit();
-            },
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
-            icon: Icons.delete,
-            label: 'Delete',
-          ),
-          // You can add more actions here if needed
-        ],
-      ),
-      child: Card(
-        margin: const EdgeInsets.all(10),
-        elevation: 3,
-        child: Padding(
-          padding: const EdgeInsets.all(15),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${car.make} ${car.model}',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text('Year: ${car.year}'),
-              Text('Price: \$${car.price.toStringAsFixed(2)}'),
-              Text('Mileage: ${car.mileage} miles'),
-              Text('Color: ${car.color}'),
-              Text('Listed on: ${car.createdAt}'),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _CarListPageState extends State<CarListPage> {
@@ -138,6 +72,58 @@ class _CarListPageState extends State<CarListPage> {
         futureCars = fetchCars();
       });
     }
+  }
+
+  void _deleteCar(int carId) async {
+    bool confirm = await _showConfirmationDialog();
+    if (confirm) {
+      // Send DELETE request to the API
+      final response = await http.delete(
+        Uri.parse('http://10.0.2.2:5000/cars/$carId'),
+      );
+
+      if (response.statusCode == 200) {
+        // Successfully deleted the car
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Car deleted successfully')),
+        );
+        setState(() {
+          futureCars = fetchCars();
+        });
+      } else {
+        // Failed to delete the car
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to delete car')),
+        );
+      }
+    }
+  }
+
+  Future<bool> _showConfirmationDialog() async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Confirm Delete'),
+              content: const Text('Are you sure you want to delete this car?'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(false); // Return false
+                  },
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(true); // Return true
+                  },
+                  child: const Text('Delete'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false; // If the dialog is dismissed, return false
   }
 
   @override
@@ -222,6 +208,9 @@ class _CarListPageState extends State<CarListPage> {
                         futureCars = fetchCars();
                       });
                     }
+                  },
+                  onDelete: () {
+                    _deleteCar(cars[index].id);
                   },
                 );
               },

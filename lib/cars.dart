@@ -181,6 +181,10 @@ class _CarListPageState extends State<CarListPage> {
         ),
       ),
       appBar: AppBar(
+        leading: Image.asset(
+          'assets/images/car_logo.png', // Ensure the correct path to your image asset
+          fit: BoxFit.contain, // Adjust the image fit
+        ),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
